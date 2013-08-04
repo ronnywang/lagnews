@@ -17,7 +17,7 @@
         </tr>
     </thead>
     <tbody>
-    <?php for ($i = 0; $i <= 30; $i ++) { ?>
+    <?php for ($i = 0; $i <= 60; $i ++) { ?>
     <?php $time = strtotime("0:0:0 -{$i}day"); ?>
     <?php $data = null; ?>
     <?php if ($log = HeadLineLog::find($time)) { $data = json_decode($log->data); } ?>
