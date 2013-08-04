@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>歷史四大報</title>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.2.2/bootstrap.min.js"></script>
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.2.2/css/bootstrap.css">
+</head>
+<body>
+<table class="table">
+    <thead>
+        <tr>
+            <td>日期</td>
+            <td>四大報頭條</td>
+            <td>來源</td>
+        </tr>
+    </thead>
+    <tbody>
+    <?php for ($i = 0; $i <= 30; $i ++) { ?>
+    <?php $time = strtotime("0:0:0 -{$i}day"); ?>
+    <?php $data = null; ?>
+    <?php if ($log = HeadLineLog::find($time)) { $data = json_decode($log->data); } ?>
+    <tr>
+        <td><?= date('Y/m/d', $time) ?> . <?= $time ?></td>
+        <td>
+            <?php if ($data) { ?>
+            <ol>
+                <?php foreach ($data->headlines as $headline) { list($paper, $title) = $headline; ?>
+                <li><?= $this->escape($paper) ?>: <?= $this->escape($title) ?></li>
+                <?php } ?>
+            </ol>
+            <?php } ?>
+        </td>
+        <td>
+            <?php if ($data) { ?>
+            <a href="<?= $this->escape($data->link) ?>"><?= $this->escape($data->title) ?></a>
+            <?php } ?>
+        </td>
+    <?php } ?>
+    </tbody>
+</table>
