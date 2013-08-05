@@ -22,7 +22,7 @@
     <?php $data = null; ?>
     <?php if ($log = HeadLineLog::find($time)) { $data = json_decode($log->data); } ?>
     <tr>
-        <td><?= date('Y/m/d', $time) ?> . <?= $time ?></td>
+        <td><?= date('Y/m/d D', $time) ?></td>
         <td>
             <?php if ($data) { ?>
             <ol>
