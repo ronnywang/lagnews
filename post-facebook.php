@@ -45,7 +45,8 @@ if ($log->facebook_id) {
     exit;
 }
 $data = json_decode($log->data);
-$message = date('Y/m/d', $time) . '四大報頭版新聞' . PHP_EOL;
+$message = '';
+$message .= '腿新聞為您帶來30天前的四大報頭版：' . date('Y/m/d', $time) . PHP_EOL;
 foreach ($data->headlines as $headline) {
     list($paper, $title) = $headline;
     $message .= $paper . ':' . $title . PHP_EOL;
