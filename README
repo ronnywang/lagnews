@@ -1,0 +1,18 @@
+LagNews腿新聞
+=============
+
+* 粉絲專頁 https://www.facebook.com/lagnews.tw/
+* 歷史列表 http://oldpaper.g0v.ronny.tw/
+* Blog介紹 http://ronnywang.pixnet.net/blog/post/32536633
+
+檔案說明
+========
+* crawler.php 爬從 Dimensions.tw 和 ettoday 每日公布的四大報頭條資訊，一天跑一次
+* post-facebook.php 將 30 天前的頭條張貼到 facebook，每天正午跑一次
+* input.php 手動匯入一天資料時用的程式
+* webdata/stdlibs/pixframework http://github.com/pixnet/pixframework
+* webdata/stdlibs/facebook-php-sdk-master  Facebook PHP SDK
+* 其他是 Pix Framework 相關 MVC 的檔案
+
+
+本程式碼使用 BSD License 授權
