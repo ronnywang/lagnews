@@ -14,6 +14,61 @@ class Crawler
         return null;
     }
 
+    public function getFromCNAFacebookPage($timestamp)
+    {
+        $access_token = getenv('FB_ACCESSTOKEN');
+
+        $until = $timestamp + 86400;
+        $url = 'https://graph.facebook.com/148395741852581/feed?limit=50&until=' . $until . '&access_token=' . urlencode($access_token);
+        $curl = curl_init($url);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        $json = json_decode(curl_exec($curl));
+
+        $ret = new StdClass;
+        $paper_map = array(
+            '中國時報' => '中國時報',
+            '中時' => '中國時報',
+            '聯合報' => '聯合報',
+            '聯合' => '聯合報',
+            '自由時報' => '自由時報',
+            '自由' => '自由時報',
+            '蘋果日報' => '蘋果日報',
+            '蘋果' => '蘋果日報',
+        );
+        foreach ($json->data as $post) {
+            if (false === strpos($post->message, '頭條')) {
+                continue;
+            }
+            if (false === strpos($post->message, '蘋果')) {
+                continue;
+            }
+            if (strtotime($post->created_time) < $timestamp) {
+                break;
+            }
+            $message = preg_replace('#http[^\s]*#', '', $post->message);
+            $lines = explode("\n", $message);
+            $ret->title = $lines[0];
+            $ret->link = $post->link;
+            $ret->image_link = $post->picture;
+            $ret->time = $timestamp;
+            $ret->headlines = array();
+            foreach ($lines as $line) {
+                if (FALSE === strpos($line, '：')) {
+                    continue;
+                }
+                list($paper, $title) = explode('：', trim($line), 2);
+                if (!array_key_exists($paper, $paper_map)) {
+                    continue;
+                }
+                $ret->headlines[] = array($paper_map[$paper], $title);
+
+            }
+            if (count($ret->headlines) == 4) {
+                return $ret;
+            }
+        }
+    }
+
     public function getFromDimension()
     {
         $url = 'http://dimension.tw/tag/dimension-%E8%AE%80%E5%A0%B1/';
@@ -141,6 +196,26 @@ class Crawler
                 continue;
             }
             if (!$headlinelog = HeadLineLog::find($article->time)) {
+                HeadLineLog::insert(array(
+                    'time' => $article->time,
+                    'data' => json_encode($article, JSON_UNESCAPED_UNICODE),
+                ));
+            }
+        }
+
+        // 再從 中央社粉絲團搜尋 ettoday 七天的資料
+        for ($i = 0; $i < 30; $i ++) {
+            $time = strtotime('00:00:00 -' . $i . 'day');
+            if (HeadLineLog::find($time)) {
+                // 資料庫中已經有了就不用再找了
+                continue;
+            }
+            try {
+                $article = $this->getFromCNAFacebookPage($time);
+            } catch (Exception $e) {
+                continue;
+            }
+            if ($article and !$headlinelog = HeadLineLog::find($article->time)) {
                 HeadLineLog::insert(array(
                     'time' => $article->time,
                     'data' => json_encode($article, JSON_UNESCAPED_UNICODE),
