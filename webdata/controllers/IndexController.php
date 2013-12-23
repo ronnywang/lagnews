@@ -4,6 +4,7 @@ class IndexController extends Pix_Controller
 {
     public function indexAction()
     {
+        $this->view->before = intval($_GET['before']);
     }
 
     public function jsonAction()
