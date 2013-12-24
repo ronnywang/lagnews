@@ -27,4 +27,52 @@ class IndexController extends Pix_Controller
 
         return $this->json($ret);
     }
+
+    public function rssAction()
+    {
+        $this->view->title = '四大報歷史頭條 RSS';
+        $this->view->link = 'http://oldpaper.g0v.ronny.tw';
+        $items = array();
+        if ($_GET['type'] == 'bypaper') { // 依報紙找出某年
+            if (!strval($_GET['paper'])) {
+                throw new Exception("需要指定 paper={報紙}");
+            }
+            $paper = $_GET['paper'];
+            $year = intval($_GET['year']) ?: date('Y');
+            $start = mktime(0, 0, 0, 1, 1, $year);
+            $end = mktime(0, 0, 0, 1, 1, $year + 1);
+
+            foreach (HeadLineLog::search("`time` >= $start AND `time` < $end") as $log) {
+                $log = json_decode($log->data);
+                foreach ($log->headlines as $headlines) {
+                    list($p, $title) = $headlines;
+                    if ($p == $paper) {
+                        $item = new StdClass;
+                        $item->description = $title;
+                        $item->time = $log->time;
+                        $item->link = $log->link;
+                        $items[] = $item;
+                    }
+                }
+            }
+        } else { // 依月份找出所有
+            $year = intval($_GET['year']) ?: date('Y');
+            $month = intval($_GET['month']) ?: date('m');
+
+            $start = mktime(0, 0, 0, $month, 1, $year);
+            $end = strtotime('+1 month', $start);
+            foreach (HeadLineLog::search("`time` >= $start AND `time` < $end") as $log) {
+                $log = json_decode($log->data);
+                foreach ($log->headlines as $headlines) {
+                    list($p, $title) = $headlines;
+                    $item = new StdClass;
+                    $item->description = $title;
+                    $item->time = $log->time;
+                    $item->link = $log->link . '#' . $p;
+                    $items[] = $item;
+                }
+            }
+        }
+        $this->view->items = $items;
+    }
 }

@@ -1,0 +1,20 @@
+<?= '<?xml version="1.0"?>' ?>
+<rss xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+<channel>
+<title><?= $this->escape($this->title) ?></title>
+<link><?= $this->escape($this->link) ?></link>
+<description><?= $this->escape($this->description) ?></description>
+<language>zh-tw</language>
+<lastBuildDate><?= date('c') ?></lastBuildDate>
+<?php foreach ($this->items as $item) { ?>
+<item>
+<description><?= $this->escape($item->description) ?></description>
+<pubDate><?= date('c', $item->time) ?></pubDate>
+<guid><?= $this->Escape($item->link) ?></guid>
+</item>
+<?php } ?>
+
+</channel>
+
+</rss>
+
