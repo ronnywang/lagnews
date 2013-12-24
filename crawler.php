@@ -68,7 +68,8 @@ class Crawler
                 $ret->headlines[] = array($paper_map[$paper], $title);
 
             }
-            if (count($ret->headlines) == 4) {
+
+            if (count(array_unique(array_map(function($a){ return $a[0]; }, $ret->headlines))) == 4) {
                 return $ret;
             }
         }
