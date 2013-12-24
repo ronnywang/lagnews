@@ -56,10 +56,12 @@ class Crawler
             $ret->time = $timestamp;
             $ret->headlines = array();
             foreach ($lines as $line) {
-                if (FALSE === strpos($line, '：')) {
+                $line = str_replace('：', ':', $line);
+                if (FALSE === strpos($line, ':')) {
                     continue;
                 }
-                list($paper, $title) = explode('：', trim($line), 2);
+                list($paper, $title) = explode(':', trim($line), 2);
+                $paper = str_replace(' ', '', $paper);
                 if (!array_key_exists($paper, $paper_map)) {
                     continue;
                 }
