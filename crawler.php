@@ -49,6 +49,7 @@ class Crawler
             $message = str_replace('【小編報頭條】中時', '【小編報頭條】' . "\n" . '中時', $message);
             $message = preg_replace('#http[^\s]*#', '', $message);
             $message = str_replace('★', '', $message);
+            $message = str_replace('＊', '', $message);
             $lines = explode("\n", $message);
             $ret->title = $lines[0];
             $ret->link = $post->link;
