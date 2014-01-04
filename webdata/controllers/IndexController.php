@@ -7,6 +7,17 @@ class IndexController extends Pix_Controller
         $this->view->before = intval($_GET['before']);
     }
 
+    public function healthAction()
+    {
+        // 檢查昨天是否有正常抓到資料
+        if (!HeadLineLog::find(strtotime('today') - 86400)) {
+            echo 'warning';
+        } else {
+            echo 'ok';
+        }
+        exit;
+    }
+
     public function jsonAction()
     {
         $ret = new StdClass;
