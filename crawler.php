@@ -50,6 +50,7 @@ class Crawler
             $message = preg_replace('#http[^\s]*#', '', $message);
             $message = str_replace('★', '', $message);
             $message = str_replace('＊', '', $message);
+            $message = str_replace('↓', '', $message); // https://www.facebook.com/photo.php?fbid=801459959879486&set=a.187493897942765.56864.148395741852581&type=1&stream_ref=10
             $lines = explode("\n", $message);
             $ret->title = $lines[0];
             $ret->link = $post->link;
