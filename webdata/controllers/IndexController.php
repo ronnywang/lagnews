@@ -9,12 +9,14 @@ class IndexController extends Pix_Controller
 
     public function healthAction()
     {
-        // 檢查昨天是否有正常抓到資料
-        if (!HeadLineLog::find(strtotime('today') - 86400)) {
-            echo 'warning';
-        } else {
-            echo 'ok';
+        // 檢查前十天是否有正常抓到資料
+        for ($i = 1; $ < 10; $i ++) {
+            if (!HeadLineLog::find(strtotime('today') - $i * 86400)) {
+                echo 'warning';
+                exit;
+            }
         }
+        echo 'ok';
         exit;
     }
 
