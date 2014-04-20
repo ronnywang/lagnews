@@ -49,6 +49,7 @@ class Crawler
             $message = str_replace('【小編報頭條】中時', '【小編報頭條】' . "\n" . '中時', $message);
             $message = preg_replace('#http[^\s]*#', '', $message);
             $message = str_replace('★', '', $message);
+            $message = str_replace('●', '', $message);
             $message = str_replace('＊', '', $message);
             $message = str_replace('↓', '', $message); // https://www.facebook.com/photo.php?fbid=801459959879486&set=a.187493897942765.56864.148395741852581&type=1&stream_ref=10
             $message = str_replace('↑', '', $message); // https://www.facebook.com/photo.php?fbid=810338305658318&set=a.187493897942765.56864.148395741852581&type=1&stream_ref=10
