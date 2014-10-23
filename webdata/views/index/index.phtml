@@ -63,6 +63,6 @@ JSON API: <code>http://<?= $_SERVER['HTTP_HOST'] ?>/index/json</code>
     </tbody>
 </table>
 <?php if (!is_null($last_time)) { ?>
-<a href="/?before=<?= $last_time - 86400 ?>">瀏覽 <?= date('Y/m/d', $last_time) ?> 之前的頭條</a>
+<a href="/?before=<?= date('Ymd', $last_time - 86400) ?>">瀏覽 <?= date('Y/m/d', $last_time) ?> 之前的頭條</a>
 <?php } ?>
 <a href="https://github.com/ronnywang/lagnews"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>

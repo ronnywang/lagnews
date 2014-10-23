@@ -4,7 +4,12 @@ class IndexController extends Pix_Controller
 {
     public function indexAction()
     {
-        $this->view->before = intval($_GET['before']);
+        if ($before = intval($_GET['before'])) {
+            $year = substr($before, 0, 4);
+            $month = substr($before, 4, 2);
+            $day = substr($before, 6, 2);
+            $this->view->before = mktime(0, 0, 0, $month, $day, $year);
+        }
     }
 
     public function healthAction()
