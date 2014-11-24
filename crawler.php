@@ -160,9 +160,9 @@ class Crawler
         return $article;
     }
 
-    public function getFromETTodayByGoogle($date)
+    public function getFromETTodayByGoogle($date, $YmdDate)
     {
-        $query = '"' . $date . '四大報頭版"';
+        $query = '"' . $date . '四大報頭版" site:www.ettoday.net/news/' . $YmdDate;
         $cx = getenv('SEARCH_ID');
         $key = getenv('SEARCH_KEY');
         $url = 'https://www.googleapis.com/customsearch/v1?key=' . urlencode($key) .'&cx=' . urlencode($cx) . '&q=' . urlencode($query);
@@ -202,7 +202,7 @@ class Crawler
                 continue;
             }
             try {
-                $article = $this->getFromETTodayByGoogle(date('md', $time));
+                $article = $this->getFromETTodayByGoogle(date('md', $time), date('Ymd', $time));
             } catch (Exception $e) {
                 continue;
             }
