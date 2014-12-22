@@ -37,7 +37,10 @@ class Crawler
             '蘋果' => '蘋果日報',
         );
         foreach ($json->data as $post) {
-            if (false === strpos($post->message, '頭條')) {
+            if (false !== strpos($post->message, '頭條')) {
+            } elseif (false !== strpos($post->message, '四大報頭')) {
+                // https://www.facebook.com/148395741852581/photos/a.187493897942765.56864.148395741852581/1042588335766646/?type=1&permPage=1 漏字
+            } else {
                 continue;
             }
             if (false === strpos($post->message, '蘋果')) {
