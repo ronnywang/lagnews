@@ -64,6 +64,7 @@ class Crawler
             $ret->time = $timestamp;
             $ret->headlines = array();
             foreach ($lines as $line) {
+                $line = str_replace('》', ':', $line);
                 $line = str_replace('：', ':', $line);
                 if (FALSE === strpos($line, ':')) {
                     continue;
