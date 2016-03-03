@@ -193,7 +193,7 @@ class Crawler
             if (!$headlinelog = HeadLineLog::find($article->time)) {
                 HeadLineLog::insert(array(
                     'time' => $article->time,
-                    'data' => json_encode($article, JSON_UNESCAPED_UNICODE),
+                    'data' => json_encode($article),
                 ));
             }
         }
@@ -213,7 +213,7 @@ class Crawler
             if (!$headlinelog = HeadLineLog::find($article->time)) {
                 HeadLineLog::insert(array(
                     'time' => $article->time,
-                    'data' => json_encode($article, JSON_UNESCAPED_UNICODE),
+                    'data' => json_encode($article),
                 ));
             }
         }
@@ -233,7 +233,7 @@ class Crawler
             if ($article and !$headlinelog = HeadLineLog::find($article->time)) {
                 HeadLineLog::insert(array(
                     'time' => $article->time,
-                    'data' => json_encode($article, JSON_UNESCAPED_UNICODE),
+                    'data' => json_encode($article),
                 ));
             }
         }
