@@ -16,7 +16,11 @@ class IndexController extends Pix_Controller
     {
         // 檢查前十天是否有正常抓到資料
         for ($i = 1; $i < 10; $i ++) {
-            if (!HeadLineLog::find(strtotime('today') - $i * 86400)) {
+            if (!$l = HeadLineLog::find(strtotime('today') - $i * 86400)) {
+                echo 'warning';
+                exit;
+            }
+            if (json_decode($l->data)) {
                 echo 'warning';
                 exit;
             }
