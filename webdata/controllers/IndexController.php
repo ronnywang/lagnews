@@ -20,7 +20,7 @@ class IndexController extends Pix_Controller
                 echo 'warning';
                 exit;
             }
-            if (json_decode($l->data)) {
+            if (!json_decode($l->data)) {
                 echo 'warning';
                 exit;
             }
