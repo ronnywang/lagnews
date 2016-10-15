@@ -1,0 +1,20 @@
+{
+  "repo" :"ronnywang/lagnews",
+  "author" : "ronnywang",
+  "status" : "",
+  "name": "LagNews",
+  "name_zh": "LagNews 腿新聞",
+  "description": "LagNews",
+  "description_zh": "LagNews 腿新聞",
+  "homepage" : "https://www.facebook.com/lagnews.tw/",
+  "thumbnail" : "",
+  "document": "",
+  "repository": "https://github.com/ronnywang/lagnews",
+  "licenses": [],
+  "keywords": [],
+  "audience": [],
+  "products" :[],
+  "partOf": "",
+  "contributors" :[],
+  "needs" : []
+}
