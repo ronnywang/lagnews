@@ -19,7 +19,7 @@ class Crawler
         $access_token = getenv('FB_ACCESSTOKEN');
 
         $until = $timestamp + 86400;
-        $url = 'https://graph.facebook.com/148395741852581/feed?limit=50&until=' . $until . '&access_token=' . urlencode($access_token) . '&fields=message,link,picture';
+        $url = 'https://graph.facebook.com/148395741852581/feed?limit=200&until=' . $until . '&access_token=' . urlencode($access_token) . '&fields=message,link,picture';
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         $json = json_decode(curl_exec($curl));
