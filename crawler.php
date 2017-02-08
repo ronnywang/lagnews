@@ -40,6 +40,8 @@ class Crawler
             if (false !== strpos($post->message, '頭條')) {
             } elseif (false !== strpos($post->message, '四大報頭')) {
                 // https://www.facebook.com/148395741852581/photos/a.187493897942765.56864.148395741852581/1042588335766646/?type=1&permPage=1 漏字
+            } elseif (strpos($post->message, '中時') and strpos($post->message, '自由') and strpos($post->message, '聯合')) {
+            } elseif (strpos($post->message, '中國時報') and strpos($post->message, '自由') and strpos($post->message, '聯合')) {
             } else {
                 continue;
             }
@@ -54,7 +56,9 @@ class Crawler
             $message = preg_replace('#http[^\s]*#', '', $message);
             $message = str_replace('★', '', $message);
             $message = str_replace('●', '', $message);
+            $message = str_replace('◎', '', $message);
             $message = str_replace('＊', '', $message);
+            $message = str_replace('※', '', $message);
             $message = str_replace('↓', '', $message); // https://www.facebook.com/photo.php?fbid=801459959879486&set=a.187493897942765.56864.148395741852581&type=1&stream_ref=10
             $message = str_replace('↑', '', $message); // https://www.facebook.com/photo.php?fbid=810338305658318&set=a.187493897942765.56864.148395741852581&type=1&stream_ref=10
             $lines = explode("\n", $message);
