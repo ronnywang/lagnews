@@ -88,47 +88,6 @@ class Crawler
         }
     }
 
-    public function getFromDimension()
-    {
-        $url = 'http://dimension.tw/tag/dimension-%E8%AE%80%E5%A0%B1/';
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        $content = curl_exec($curl);
-
-        $content = str_replace('<head>', '<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8">', $content);
-
-        $doc = new DOMDocument('1.0', 'UTF-8');
-        @$doc->loadHTML($content);
-
-        $articles = array();
-        foreach ($doc->getElementsByTagName('article') as $article_dom) {
-            $article = new StdClass;
-            $header_dom = $article_dom->getElementsByTagName('header')->item(0);
-            $article->title = $header_dom->getElementsByTagName('a')->item(0)->nodeValue;
-            $article->link = $header_dom->getElementsByTagName('a')->item(0)->getAttribute('href');
-            if (!preg_match('#4 大報頭條 (\d+)/(\d+)/(\d+)#', $article->title, $matches)) {
-                throw new Exception('failed: ' . $article->link);
-            }
-            $article->time = mktime(0, 0, 0, $matches[2], $matches[3], $matches[1]);
-            if ($img_dom = $this->searchDom($header_dom->getElementsByTagName('img'), 'class', 'attachment-thumbnail')) {
-                $article->image_link = $img_dom->getAttribute('src');
-            }
-            $p_dom = $article_dom->getElementsByTagName('p')->item(0);
-            if (!preg_match('/自由時報：(.*) 聯合報：(.*) 中國時報：(.*) 蘋果日報：(.*) 自由時報/', $p_dom->nodeValue, $matches)) {
-                throw new Exception('failed: ' . $article->link);
-            }
-            $article->headlines = array(
-                array('自由時報', $matches[1]),
-                array('聯合報', $matches[2]),
-                array('中國時報', $matches[3]),
-                array('蘋果日報', $matches[4]),
-            );
-            $articles[] = $article;
-        }
-        return $articles;
-    }
-
     public function getFromETToday($url)
     {
         $curl = curl_init();
@@ -191,17 +150,6 @@ class Crawler
 
     public function main()
     {
-        // 先爬 dimensions 最新的
-        $articles = $this->getFromDimension();
-        foreach ($articles as $article) {
-            if (!$headlinelog = HeadLineLog::find($article->time)) {
-                HeadLineLog::insert(array(
-                    'time' => $article->time,
-                    'data' => json_encode($article),
-                ));
-            }
-        }
-
         // 再從 google 搜尋 ettoday 七天的資料
         for ($i = 0; $i < 7; $i ++) {
             $time = strtotime('00:00:00 -' . $i . 'day');
