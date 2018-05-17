@@ -88,77 +88,68 @@ class Crawler
         }
     }
 
-    public function getFromETToday($url)
+    public function getFromCNAPage($time)
     {
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        $content = curl_exec($curl);
+        error_log(date('Ymd', $time));
+        $papers = array('聯合報', '中國時報', '蘋果日報', '自由時報');
+        for ($news_id = 0; $news_id < 10; $news_id ++) {
+            $url = sprintf("http://www.cna.com.tw/news/firstnews/%s5%03d-1.aspx", date('Ymd', $time), $news_id);
+            $content = file_get_contents($url);
+            $doc = new DOMDocument;
+            @$doc->loadHTML($content);
 
-        $doc = new DOMDocument('1.0', 'UTF-8');
-        @$doc->loadHTML($content);
+            $title = trim($doc->getElementsByTagName('title')->item(0)->nodeValue);
+            if (strpos($title, sprintf("%d月%d日台灣各報頭條速報", date('m', $time), date('d', $time))) !== 0) {
+                continue;
+            }
 
-        $story_dom = $this->searchDom($doc->getElementsByTagName('div'), 'class', 'story');
-        $paper = null;
-        $headlines = array();
+            $body = $doc->saveHTML($doc->getElementsByTagName('section')->item(0));
+            preg_match_all('#>([^<：》]*)[》：]([^<]*)<br#u', $body, $matches);
+            $papers = array('聯合報', '中國時報', '蘋果日報', '自由時報');
+            $article = new StdClass;
+            $article->link = $url;
+            $article->title = $title;
+            if ($img_dom = $doc->getElementsByTagName('section')->item(0)->getElementsByTagName('img')->item(0)) {
+                $article->image_link = $img_dom->getAttribute('src');
+            }
+            $article->time = $time;
 
-        $article = new StdClass;
-        $article->link = $url;
-        $article->title = $this->searchDom($doc->getElementsByTagName('meta'), 'property', 'og:title')->getAttribute('content');;
-        $article->image_link = $this->searchDom($doc->getElementsByTagName('meta'), 'property', 'og:image')->getAttribute('content');;
-        if (!preg_match('#http://www.ettoday.net/news/(\d\d\d\d)(\d\d)(\d\d)/#', $url, $matches)) {
-            throw new Exception('invalid ' . $url);
-        }
-        $article->time = mktime(0, 0, 0, $matches[2], $matches[3], $matches[1]);
+            $headlines = array();
+            $papers = array_combine($papers, $papers);
 
-        foreach ($story_dom->getElementsByTagName('strong') as $strong_dom) {
-            $title = trim($strong_dom->nodeValue);
-            if (is_null($paper)) {
-                if (!preg_match('/【(.*)】/', $title, $matches)) {
+            foreach ($matches[1] as $idx => $paper) {
+                if (!array_key_exists($paper, $papers)) {
                     continue;
                 }
-                $paper = $matches[1];
-            } else {
-                $headlines[] = array($paper, $title);
-                $paper = null;
+                unset($papers[$paper]);
+
+                $headlines[] = array($paper, htmlspecialchars_decode($matches[2][$idx]));
             }
-        }
-        $article->headlines = $headlines;
-        return $article;
-    }
+            $article->headlines = $headlines;
+            if (count($papers)) {
+                throw new Exception("no 4 news");
+            }
+            return $article;
 
-    public function getFromETTodayByGoogle($date, $YmdDate)
-    {
-        $query = '"' . $date . '四大報頭版" site:www.ettoday.net/news/' . $YmdDate;
-        $cx = getenv('SEARCH_ID');
-        $key = getenv('SEARCH_KEY');
-        $url = 'https://www.googleapis.com/customsearch/v1?key=' . urlencode($key) .'&cx=' . urlencode($cx) . '&q=' . urlencode($query);
-
-        $curl = curl_init($url);
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        $content = curl_exec($curl);
-        curl_close($curl);
-        if (!$json = json_decode($content)) {
-            throw new Exception('invalid ' . $url);
         }
-        if (!$item = $json->items[0]) {
-            throw new Exception('invalid ' . $url);
-        }
-        return $this->getFromETToday($item->link);
+        throw new Exception("not found");
     }
 
     public function main()
     {
-        // 再從 google 搜尋 ettoday 七天的資料
-        for ($i = 0; $i < 7; $i ++) {
+        // 從中央社新聞抓 30 天資料
+        for ($i = 0; $i < 30; $i ++) {
             $time = strtotime('00:00:00 -' . $i . 'day');
-            if (HeadLineLog::find($time)) {
-                // 資料庫中已經有了就不用再找了
-                continue;
+            if ($article = HeadLineLog::find($time)) {
+                if (!json_decode($article->data)->headlines) {
+                    $article->delete();
+                } else {
+                    // 資料庫中已經有了就不用再找了
+                    continue;
+                }
             }
             try {
-                $article = $this->getFromETTodayByGoogle(date('md', $time), date('Ymd', $time));
+                $article = $this->getFromCNAPage($time);
             } catch (Exception $e) {
                 continue;
             }
@@ -170,7 +161,7 @@ class Crawler
             }
         }
 
-        // 再從 中央社粉絲團搜尋 ettoday 七天的資料
+        // 再從 中央社粉絲團搜尋 30 天的資料
         for ($i = 0; $i < 30; $i ++) {
             $time = strtotime('00:00:00 -' . $i . 'day');
             if (HeadLineLog::find($time)) {
