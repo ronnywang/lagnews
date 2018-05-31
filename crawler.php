@@ -99,7 +99,7 @@ class Crawler
             @$doc->loadHTML($content);
 
             $title = trim($doc->getElementsByTagName('title')->item(0)->nodeValue);
-            if (strpos($title, sprintf("%d月%d日台灣各報頭條速報", date('m', $time), date('d', $time))) !== 0) {
+            if (strpos($title, sprintf("%d月%d日台灣各報頭條速報", date('m', $time), date('d', $time))) === false) {
                 continue;
             }
 
