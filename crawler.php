@@ -105,7 +105,7 @@ class Crawler
             }
 
             $body = $doc->saveHTML($doc->getElementsByTagName('section')->item(0));
-            preg_match_all('#>([^<：》]*)[》：]([^<]*)<br#u', $body, $matches);
+            preg_match_all('#>([^<：》]*)[》：]([^<]*)<#u', $body, $matches);
             $papers = array('聯合報', '中國時報', '蘋果日報', '自由時報');
             $article = new StdClass;
             $article->link = $url;
