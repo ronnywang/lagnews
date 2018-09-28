@@ -93,9 +93,10 @@ class Crawler
         error_log(date('Ymd', $time));
         $papers = array('聯合報', '中國時報', '蘋果日報', '自由時報');
         for ($news_id = 0; $news_id < 10; $news_id ++) {
-            $url = sprintf("http://www.cna.com.tw/news/firstnews/%s5%03d-1.aspx", date('Ymd', $time), $news_id);
+            $url = sprintf("http://www.cna.com.tw/news/firstnews/%s5%03d.aspx", date('Ymd', $time), $news_id);
             $content = file_get_contents($url);
             $doc = new DOMDocument;
+            $content = str_replace('<head>', '<head><meta charset="utf-8" />', $content);
             @$doc->loadHTML($content);
 
             $title = trim($doc->getElementsByTagName('title')->item(0)->nodeValue);
@@ -104,13 +105,13 @@ class Crawler
                 continue;
             }
 
-            $body = $doc->saveHTML($doc->getElementsByTagName('section')->item(0));
+            $body = $doc->saveHTML($doc->getElementsByTagName('article')->item(0));
             preg_match_all('#>([^<：》]*)[》：]([^<]*)<#u', $body, $matches);
             $papers = array('聯合報', '中國時報', '蘋果日報', '自由時報');
             $article = new StdClass;
             $article->link = $url;
             $article->title = $title;
-            if ($img_dom = $doc->getElementsByTagName('section')->item(0)->getElementsByTagName('img')->item(0)) {
+            if ($img_dom = $doc->getElementsByTagName('article')->item(0)->getElementsByTagName('img')->item(0)) {
                 $article->image_link = $img_dom->getAttribute('src');
             }
             $article->time = $time;
