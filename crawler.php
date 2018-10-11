@@ -106,7 +106,8 @@ class Crawler
             }
 
             $body = $doc->saveHTML($doc->getElementsByTagName('article')->item(0));
-            preg_match_all('#>([^<：》]*)[》：]([^<]*)<#u', $body, $matches);
+            $body = str_replace('&nbsp;', '', $body);
+            preg_match_all('#>\s*([^<：》]*)[》：]([^<]*)<#u', $body, $matches);
             $papers = array('聯合報', '中國時報', '蘋果日報', '自由時報');
             $article = new StdClass;
             $article->link = $url;
@@ -120,6 +121,9 @@ class Crawler
             $papers = array_combine($papers, $papers);
 
             foreach ($matches[1] as $idx => $paper) {
+                if ($paper == '蘋果時報') {
+                    $paper = '蘋果日報';
+                }
                 if (!array_key_exists($paper, $papers)) {
                     continue;
                 }
