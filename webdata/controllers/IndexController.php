@@ -50,6 +50,26 @@ class IndexController extends Pix_Controller
         return $this->json($ret);
     }
 
+    public function textAction()
+    {
+        $year = intval($_GET['year']) ?: date('Y');
+        $month = intval($_GET['month']) ?: date('m');
+
+        $start = mktime(0, 0, 0, $month, 1, $year);
+        $end = strtotime('+1 month', $start);
+        $text = '';
+        foreach (HeadLineLog::search("`time` >= $start AND `time` < $end") as $log) {
+            $log = json_decode($log->data);
+            foreach ($log->headlines as $headlines) {
+                list($p, $title) = $headlines;
+                $text .= $title;
+            }
+        }
+        header('Content-Type: text/plain');
+        echo $text;
+        exit;
+    }
+
     public function rssAction()
     {
         $this->view->title = '四大報歷史頭條 RSS';
