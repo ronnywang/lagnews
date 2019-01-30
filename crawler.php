@@ -88,6 +88,49 @@ class Crawler
         }
     }
 
+    public function getFromApplePage($time)
+    {
+        $date = date('Ymd', $time);
+        $query = '"各報頭條搶先" site:https://tw.appledaily.com/new/realtime/' . $date;
+        $cx = getenv('SEARCH_ID');
+        $key = getenv('SEARCH_KEY');
+        $url = 'https://www.googleapis.com/customsearch/v1?key=' . urlencode($key) .'&cx=' . urlencode($cx) . '&q=' . urlencode($query);
+        $obj = json_decode(file_get_contents($url));
+        foreach ($obj->items as $item) {
+            if (false === strpos($item->title, '各報頭條搶先')) {
+                continue;
+            }
+            error_log($item->link);
+            $content = file_get_contents($item->link);
+            $papers = array('聯合報', '中國時報', '蘋果日報', '自由時報');
+            $papers = array_combine($papers, $papers);
+
+            $article = new StdClass;
+            $article->link = $item->link;
+            $article->title = $item->title;
+            if (preg_match('#<link href="([^"]*)" rel="image_src" type="image/jpeg">#', $content, $matches)) {
+                $article->image_link = $matches[1];
+            }
+
+            $article->time = $time;
+            preg_match_all('#(<[^>]*>)+([^<]*)頭條(<[^>]*>)+([^<]*)#', $content, $matches);
+            foreach ($matches[2] as $idx => $paper) {
+                if (!array_key_exists($paper, $papers))  {
+                    continue;
+                }
+                unset($papers[$paper]);
+                $headlines[] = array($paper, htmlspecialchars_decode($matches[4][$idx]));
+            }
+            $article->headlines = $headlines;
+
+            if (count($papers)) {
+                throw new Exception("no 4 news");
+            }
+            return $article;
+        }
+        throw new Exception("not found");
+    }
+
     public function getFromCNAPage($time)
     {
         error_log(date('Ymd', $time));
@@ -143,6 +186,30 @@ class Crawler
 
     public function main()
     {
+        // 從蘋果日報抓 30 天資料
+        for ($i = 0; $i < 30; $i ++) {
+            $time = strtotime('00:00:00 -' . $i . 'day');
+            if ($article = HeadLineLog::find($time)) {
+                if (!json_decode($article->data)->headlines) {
+                    $article->delete();
+                } else {
+                    // 資料庫中已經有了就不用再找了
+                    continue;
+                }
+            }
+            try {
+                $article = $this->getFromApplePage($time);
+            } catch (Exception $e) {
+                continue;
+            }
+            if (!$headlinelog = HeadLineLog::find($article->time)) {
+                HeadLineLog::insert(array(
+                    'time' => $article->time,
+                    'data' => json_encode($article),
+                ));
+            }
+        }
+
         // 從中央社新聞抓 30 天資料
         for ($i = 0; $i < 30; $i ++) {
             $time = strtotime('00:00:00 -' . $i . 'day');
