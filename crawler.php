@@ -198,7 +198,7 @@ class Crawler
                 }
             }
             try {
-                $article = $this->getFromApplePage($time);
+                //$article = $this->getFromApplePage($time);
             } catch (Exception $e) {
                 continue;
             }
