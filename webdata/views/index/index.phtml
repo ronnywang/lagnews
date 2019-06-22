@@ -35,14 +35,13 @@ JSON API: <code>http://<?= $_SERVER['HTTP_HOST'] ?>/index/json</code>
         </tr>
     </thead>
     <tbody>
-    <?php $last_time = null; ?>
     <?php for ($i = 0; $i <= 60; $i ++) { ?>
     <?php $time = strtotime("0:0:0 -{$i}day", $this->before ?: time()); ?>
     <?php $data = null; ?>
     <?php if ($log = HeadLineLog::find($time)) { ?>
     <?php $data = json_decode($log->data); ?>
-    <?php $last_time = $log->time ?>
     <?php } ?>
+    <?php $last_time = $time ?>
     <tr>
         <td><?= date('Y/m/d D', $time) ?></td>
         <td>
@@ -62,7 +61,7 @@ JSON API: <code>http://<?= $_SERVER['HTTP_HOST'] ?>/index/json</code>
     <?php } ?>
     </tbody>
 </table>
-<?php if (!is_null($last_time)) { ?>
+<?php if (HeadLineLog::search("time < $last_time")->first()) { ?>
 <a href="/?before=<?= date('Ymd', $last_time - 86400) ?>">瀏覽 <?= date('Y/m/d', $last_time) ?> 之前的頭條</a>
 <?php } ?>
 <a href="https://github.com/ronnywang/lagnews"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
