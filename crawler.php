@@ -251,6 +251,72 @@ class Crawler
         throw new Exception("not found");
     }
 
+    public function getFromKairos($time)
+    {
+        $date = date('Ymd', $time);
+        $query = sprintf("%d月%d日各報頭條摘要彙整", date('m', $time), date('d', $time));
+        error_log($query);
+
+        $url = 'https://kairos.news/?s=' . urlencode($query);
+        $content = file_get_contents($url);
+        $doc = new DOMDocument;
+        @$doc->loadHTML($content);
+        foreach ($doc->getElementsByTagName('div') as $div_dom) {
+            if ($div_dom->getAttribute('class') != 'post-details') {
+                continue;
+            }
+            foreach ($div_dom->getElementsByTagName('span') as $span_dom) {
+                if ($span_dom->getAttribute('class') == 'date meta-item') {
+                    if (trim($span_dom->nodeValue) != date('Y-m-d', $time)) {
+                        continue 2;
+                    }
+                    foreach ($div_dom->getElementsByTagName('a') as $a_href) {
+                        if ($a_href->getAttribute('alt') != $query) {
+                            continue;
+                        }
+                    }
+                    $article_url = $a_href->getAttribute('href');
+                    $content = file_get_contents($article_url);
+
+                    $article = new StdClass;
+                    $article->link = $article_url;
+                    $article->title = $query;
+                    $article->time = $time;
+                    if (preg_match('#<meta property="og:image" content="([^"]*)" />#', $content, $matches)) {
+                        $article->image_link = $matches[1];
+                    }
+                    $papers = array('聯合報', '中國時報', '蘋果日報', '自由時報');
+                    $papers = array_combine($papers, $papers);
+
+                    $lines = explode("\n", $content);
+                    $headlines = array();
+                    while ($lines) {
+                        $line = array_shift($lines);
+                        if (preg_match('#<strong>【([^<]*)】</strong>#u', $line, $matches)) {
+                            if (array_key_exists($matches[1], $papers)) {
+                                $paper = $matches[1];
+                                $line = array_shift($lines);
+                                if (preg_match('#<strong>([^<]*)</strong>#', $line, $matches)) {
+                                    $title = $matches[1];
+                                    unset($papers[$paper]);
+                                    $headlines[] = array($paper, $title);
+                                }
+                            }
+                        }
+                    }
+
+                    $article->headlines = $headlines;
+                    if (count($papers)) {
+                        throw new Exception("no 4 news");
+                    }
+                    return $article;
+                }
+            }
+        }
+
+        throw new Exception("not found");
+    }
+
     public function main()
     {
         // 從 Yahoo 新聞抓 30 天資料
@@ -277,7 +343,7 @@ class Crawler
             }
         }
 
-        // 從中央社新聞抓 30 天資料
+        // 從風向新聞抓 30 天資料
         for ($i = 0; $i < 30; $i ++) {
             $time = strtotime('00:00:00 -' . $i . 'day');
             if ($article = HeadLineLog::find($time)) {
@@ -289,7 +355,7 @@ class Crawler
                 }
             }
             try {
-                $article = $this->getFromCNAPage($time);
+                $article = $this->getFromKairos($time);
             } catch (Exception $e) {
                 continue;
             }
