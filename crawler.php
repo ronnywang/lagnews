@@ -131,6 +131,73 @@ class Crawler
         throw new Exception("not found");
     }
 
+    public function getFromYahooPage($time)
+    {
+        $date = date('Ymd', $time);
+        $query = sprintf("今日（%d/%d）重點新聞報你知", date('m', $time), date('d', $time));
+        error_log($query);
+
+        $url = 'https://tw.news.yahoo.com/search?p=' . urlencode($query);
+        $content = file_get_contents($url);
+        $doc = new DOMDocument;
+        @$doc->loadHTML($content);
+        foreach ($doc->getElementsByTagName('a') as $a_dom) {
+            if ($a_dom->nodeValue == $query) {
+                $article_url = 'https://tw.news.yahoo.com' . $a_dom->getAttribute('href');
+                $curl = curl_init($article_url);
+                curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($curl, CURLOPT_USERAGENT, 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36');
+                $content = curl_exec($curl);
+                foreach (explode("\n", $content) as $line) {
+                    if (strpos($line, 'root.App.main = ') === 0) {
+                        $d = substr($line, strlen('root.App.main = '), -1);
+                        $obj = json_decode($d);
+                        $d = $obj->context->dispatcher->stores->ContentStore;
+                        $d = $d->uuidMap->{$d->currentContentIds->default};
+                        $article = new StdClass;
+                        $article->link = $article_url;
+                        $article->title = $query;
+                        $article->time = $time;
+
+                        if ($d->title != $query) {
+                            break;
+                        }
+                        $papers = array('聯合報', '中國時報', '蘋果日報', '自由時報');
+                        $papers = array_combine($papers, $papers);
+
+                        $headlines = array();
+                        foreach ($d->body as $section) {
+                            if ($section->type == 'image' and $section->alt == $query) {
+                                $article->image_link = $section->size->original->url;
+                                continue;
+                            }
+
+                            if ($section->type == 'text' and strpos($section->content, '》')) {
+                                preg_match_all('#>([^<》]*)》([^<]*)<#u', '>' . $section->content . '<', $matches);
+                                foreach ($matches[1] as $idx => $paper) {
+                                    $title = $matches[2][$idx];
+                                    if (array_key_exists($paper, $papers)) {
+                                        unset($papers[$paper]);
+                                        $headlines[] = array($paper, $title);
+                                    }
+                                }
+                            }
+                        }
+
+                        $article->headlines = $headlines;
+                        if (count($papers)) {
+                            throw new Exception("no 4 news");
+                        }
+                        return $article;
+                    }
+                }
+                curl_close($curl);
+            }
+        }
+
+        throw new Exception("not found");
+    }
+
     public function getFromCNAPage($time)
     {
         error_log(date('Ymd', $time));
@@ -186,7 +253,7 @@ class Crawler
 
     public function main()
     {
-        // 從蘋果日報抓 30 天資料
+        // 從 Yahoo 新聞抓 30 天資料
         for ($i = 0; $i < 30; $i ++) {
             $time = strtotime('00:00:00 -' . $i . 'day');
             if ($article = HeadLineLog::find($time)) {
@@ -198,7 +265,7 @@ class Crawler
                 }
             }
             try {
-                //$article = $this->getFromApplePage($time);
+                $article = $this->getFromYahooPage($time);
             } catch (Exception $e) {
                 continue;
             }
