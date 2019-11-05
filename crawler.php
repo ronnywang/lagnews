@@ -185,7 +185,7 @@ class Crawler
                         }
 
                         $article->headlines = $headlines;
-                        if (count($papers)) {
+                        if (count($papers) and !(count($papers) == 1 and array_keys($papers)[0] == '蘋果日報')) {
                             throw new Exception("no 4 news");
                         }
                         return $article;
