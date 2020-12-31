@@ -66,8 +66,22 @@ class IndexController extends Pix_Controller
             }
         }
         header('Content-Type: text/plain');
-        echo $text;
+        echo str_replace('&nbsp;', '', $text);
         exit;
+    }
+
+    public function wordcloudAction()
+    {
+        $year = intval($_GET['year']) ?: date('Y');
+        $month = intval($_GET['month']) ?: date('m');
+
+        $start = mktime(0, 0, 0, $month, 1, $year);
+        $end = strtotime('+1 month', $start);
+        $data = array();
+        foreach (HeadLineLog::search("`time` >= $start AND `time` < $end") as $log) {
+            $data[] = json_decode($log->data);
+        }
+        $this->view->data = $data;
     }
 
     public function rssAction()
