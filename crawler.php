@@ -133,65 +133,98 @@ class Crawler
 
     public function getFromYahooPage($time)
     {
-        $date = date('Ymd', $time);
-        $query = sprintf("今日（%d/%d）重點新聞報你知", date('m', $time), date('d', $time));
-        error_log($query);
+        $article_url = null;
+        if (false) { // 從 google 搜尋
+            $date = date('Ymd', $time);
+            $title=  sprintf('今日（%s）重點新聞報你知', date('n/j', $time));
+            $query = sprintf('"今日（%s）重點新聞報你知" site:tw.news.yahoo.com', date('n/j', $time));
+            $cx = getenv('SEARCH_ID');
+            $key = getenv('SEARCH_KEY');
+            $url = 'https://www.googleapis.com/customsearch/v1?key=' . urlencode($key) .'&cx=' . urlencode($cx) . '&q=' . urlencode($query);
+            $obj = json_decode(file_get_contents($url));
+            foreach ($obj->items as $item) {
+                if (false === strpos($item->title, $title)) {
+                    continue;
+                }
+                if (false === strpos($item->htmlSnippet, '個月前') and false === strpos($item->htmlSnippet, date('Y', $time) . '年')) {
+                    continue;
+                }
+                error_log($item->title);
+                $article_url = $item->link;
+            }
+        } else {
 
-        $url = 'https://tw.news.yahoo.com/search?p=' . urlencode($query);
-        $content = file_get_contents($url);
-        $doc = new DOMDocument;
-        @$doc->loadHTML($content);
-        foreach ($doc->getElementsByTagName('a') as $a_dom) {
-            if ($a_dom->nodeValue == $query) {
-                $article_url = 'https://tw.news.yahoo.com' . $a_dom->getAttribute('href');
+            $date = date('Ymd', $time);
+            $query = sprintf("今日（%d/%d）重點新聞報你知", date('m', $time), intval(date('d', $time)));
+            error_log($query);
+
+            $url = 'https://tw.news.yahoo.com/search?p=' . urlencode($query);
+            $content = file_get_contents($url);
+            $doc = new DOMDocument;
+            @$doc->loadHTML($content);
+            foreach ($doc->getElementsByTagName('a') as $a_dom) {
+                if ($a_dom->nodeValue == $query) {
+                    $article_url = 'https://tw.news.yahoo.com' . $a_dom->getAttribute('href');
+                    error_log($article_url);
+                }
+            }
+        }
+        if ($article_url) {
+            if (true) {
                 $curl = curl_init($article_url);
                 curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($curl, CURLOPT_USERAGENT, 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36');
                 $content = curl_exec($curl);
-                foreach (explode("\n", $content) as $line) {
-                    if (strpos($line, 'root.App.main = ') === 0) {
-                        $d = substr($line, strlen('root.App.main = '), -1);
-                        $obj = json_decode($d);
-                        $d = $obj->context->dispatcher->stores->ContentStore;
-                        $d = $d->uuidMap->{$d->currentContentIds->default};
-                        $article = new StdClass;
-                        $article->link = $article_url;
-                        $article->title = $query;
-                        $article->time = $time;
+                $doc2 = new DOMDocument;
+                @$doc2->loadHTML($content);
 
-                        if ($d->title != $query) {
-                            break;
-                        }
-                        $papers = array('聯合報', '中國時報', '蘋果日報', '自由時報');
-                        $papers = array_combine($papers, $papers);
+                $article = new StdClass;
+                $article->link = $article_url;
+                $article->title = $query;
+                $article->time = $time;
+                $papers = array('聯合報', '中國時報', '蘋果日報', '自由時報');
+                $papers = array_combine($papers, $papers);
+                $headlines = array();
 
-                        $headlines = array();
-                        foreach ($d->body as $section) {
-                            if ($section->type == 'image' and $section->alt == $query) {
-                                $article->image_link = $section->size->original->url;
-                                continue;
+                foreach ($doc2->getElementsByTagName('strong') as $node) {
+                    $text = $node->nodeValue;
+
+                    if (strpos($text, '》')) {
+                        preg_match_all('#>([^<》]*)》([^<]*)<#u', '>' . $text. '<', $matches);
+                        foreach ($matches[1] as $idx => $paper) {
+                            $title = $matches[2][$idx];
+                            if (array_key_exists($paper, $papers)) {
+                                unset($papers[$paper]);
+                                $headlines[] = array($paper, $title);
                             }
+                        }
+                    }
+                }
+                foreach ($doc2->getElementsByTagName('p') as $p_dom) {
+                    foreach ($p_dom->childNodes as $node) {
+                        if ($node->nodeName != '#text') {
+                            continue;
+                        }
+                        $text = $node->nodeValue;
 
-                            if ($section->type == 'text' and strpos($section->content, '》')) {
-                                preg_match_all('#>([^<》]*)》([^<]*)<#u', '>' . $section->content . '<', $matches);
-                                foreach ($matches[1] as $idx => $paper) {
-                                    $title = $matches[2][$idx];
-                                    if (array_key_exists($paper, $papers)) {
-                                        unset($papers[$paper]);
-                                        $headlines[] = array($paper, $title);
-                                    }
+                        if (strpos($text, '》')) {
+                            preg_match_all('#>([^<》]*)》([^<]*)<#u', '>' . $text. '<', $matches);
+                            foreach ($matches[1] as $idx => $paper) {
+                                $title = $matches[2][$idx];
+                                if (array_key_exists($paper, $papers)) {
+                                    unset($papers[$paper]);
+                                    $headlines[] = array($paper, $title);
                                 }
                             }
                         }
-
-                        $article->headlines = $headlines;
-                        if (count($papers) and !(count($papers) == 1 and array_keys($papers)[0] == '蘋果日報')) {
-                            throw new Exception("no 4 news");
-                        }
-                        return $article;
                     }
                 }
-                curl_close($curl);
+
+                $article->headlines = $headlines;
+                if (count($papers) and !(count($papers) == 1 and array_keys($papers)[0] == '蘋果日報')) {
+                    throw new Exception("no 4 news");
+                }
+                return $article;
             }
         }
 
@@ -251,72 +284,6 @@ class Crawler
         throw new Exception("not found");
     }
 
-    public function getFromKairos($time)
-    {
-        $date = date('Ymd', $time);
-        $query = sprintf("%d月%d日各報頭條摘要彙整", date('m', $time), date('d', $time));
-        error_log($query);
-
-        $url = 'https://kairos.news/?s=' . urlencode($query);
-        $content = file_get_contents($url);
-        $doc = new DOMDocument;
-        @$doc->loadHTML($content);
-        foreach ($doc->getElementsByTagName('div') as $div_dom) {
-            if ($div_dom->getAttribute('class') != 'post-details') {
-                continue;
-            }
-            foreach ($div_dom->getElementsByTagName('span') as $span_dom) {
-                if ($span_dom->getAttribute('class') == 'date meta-item') {
-                    if (trim($span_dom->nodeValue) != date('Y-m-d', $time)) {
-                        continue 2;
-                    }
-                    foreach ($div_dom->getElementsByTagName('a') as $a_href) {
-                        if ($a_href->getAttribute('alt') != $query) {
-                            continue;
-                        }
-                    }
-                    $article_url = $a_href->getAttribute('href');
-                    $content = file_get_contents($article_url);
-
-                    $article = new StdClass;
-                    $article->link = $article_url;
-                    $article->title = $query;
-                    $article->time = $time;
-                    if (preg_match('#<meta property="og:image" content="([^"]*)" />#', $content, $matches)) {
-                        $article->image_link = $matches[1];
-                    }
-                    $papers = array('聯合報', '中國時報', '蘋果日報', '自由時報');
-                    $papers = array_combine($papers, $papers);
-
-                    $lines = explode("\n", $content);
-                    $headlines = array();
-                    while ($lines) {
-                        $line = array_shift($lines);
-                        if (preg_match('#<strong>【([^<]*)】</strong>#u', $line, $matches)) {
-                            if (array_key_exists($matches[1], $papers)) {
-                                $paper = $matches[1];
-                                $line = array_shift($lines);
-                                if (preg_match('#<strong>([^<]*)</strong>#', $line, $matches)) {
-                                    $title = $matches[1];
-                                    unset($papers[$paper]);
-                                    $headlines[] = array($paper, $title);
-                                }
-                            }
-                        }
-                    }
-
-                    $article->headlines = $headlines;
-                    if (count($papers)) {
-                        throw new Exception("no 4 news");
-                    }
-                    return $article;
-                }
-            }
-        }
-
-        throw new Exception("not found");
-    }
-
     public function main()
     {
         // 從 Yahoo 新聞抓 30 天資料
@@ -342,53 +309,6 @@ class Crawler
                 ));
             }
         }
-
-        // 從風向新聞抓 30 天資料
-        for ($i = 0; $i < 30; $i ++) {
-            $time = strtotime('00:00:00 -' . $i . 'day');
-            if ($article = HeadLineLog::find($time)) {
-                if (!json_decode($article->data)->headlines) {
-                    $article->delete();
-                } else {
-                    // 資料庫中已經有了就不用再找了
-                    continue;
-                }
-            }
-            try {
-                $article = $this->getFromKairos($time);
-            } catch (Exception $e) {
-                continue;
-            }
-            if (!$headlinelog = HeadLineLog::find($article->time)) {
-                HeadLineLog::insert(array(
-                    'time' => $article->time,
-                    'data' => json_encode($article),
-                ));
-            }
-        }
-
-        // 再從 中央社粉絲團搜尋 30 天的資料
-        for ($i = 0; $i < 30; $i ++) {
-            $time = strtotime('00:00:00 -' . $i . 'day');
-            if (HeadLineLog::find($time)) {
-                // 資料庫中已經有了就不用再找了
-                continue;
-            }
-            try {
-                $article = $this->getFromCNAFacebookPage($time);
-            } catch (Exception $e) {
-                continue;
-            }
-            if ($article and !$headlinelog = HeadLineLog::find($article->time)) {
-                HeadLineLog::insert(array(
-                    'time' => $article->time,
-                    'data' => json_encode($article),
-                ));
-            }
-        }
-        exit;
-
-
     }
 }
 
